@@ -1,0 +1,152 @@
+{% extends 'equipment/base.html' %}
+
+{% block title %}ONDA - Dashboard Sécurité IP{% endblock %}
+
+{% block content %}
+<!-- En-tête de la page -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-shield-check text-primary me-2"></i>Tableau de Bord de Sécurité IP
+        </h4>
+        <p class="text-muted small mb-0">Contrôle des adresses IP autorisées et journaux des tentatives d'accès - ONDA</p>
+    </div>
+    <div>
+        <a href="/admin/" class="btn btn-warning text-white fw-semibold shadow-sm px-3" style="background-color: #f39c12; border: none;">
+            <i class="bi bi-plus-lg me-1"></i> Autoriser une IP
+        </a>
+    </div>
+</div>
+
+<!-- Cartes Statistiques Sécurité -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-success border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">IPS AUTORISÉES</small>
+                    <h2 class="fw-bold my-1 text-dark">{{ allowed_ips.count|default:"0" }}</h2>
+                </div>
+                <div class="bg-success-subtle text-success p-2 rounded-circle fs-4">
+                    <i class="bi bi-shield-fill-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-danger border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">ACCÈS BLOQUÉS</small>
+                    <h2 class="fw-bold my-1 text-dark">{{ blocked_logs.count|default:"0" }}</h2>
+                </div>
+                <div class="bg-danger-subtle text-danger p-2 rounded-circle fs-4">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 border-start border-secondary border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">DERNIÈRE TENTATIVE D'ACCÈS</small>
+                    <h6 class="fw-bold my-2 text-dark">
+                        {% if last_log %}{{ last_log.timestamp|date:"d/m/Y H:i" }}{% else %}Aucun enregistrement{% endif %}
+                    </h6>
+                </div>
+                <div class="bg-light text-secondary p-2 rounded-circle fs-4">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableaux de Sécurité -->
+<div class="row g-3">
+    <!-- Adresses IP Autorisées -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-white h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>Adresses IP Autorisées
+                </h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Adresse IP</th>
+                            <th>Description</th>
+                            <th class="text-end pe-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ip in allowed_ips %}
+                        <tr>
+                            <td class="ps-3 fw-bold text-dark">{{ ip.ip_address }}</td>
+                            <td class="text-muted">{{ ip.description|default:"-" }}</td>
+                            <td class="text-end pe-3">
+                                <a href="#" class="btn btn-sm btn-outline-danger px-2 py-1">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                Aucune IP spécifique enregistrée.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journal des Accès Récents -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-white h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-journal-text text-primary me-2"></i>Journal des Accès Récents
+                </h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Adresse IP</th>
+                            <th>Date &amp; Heure</th>
+                            <th class="text-end pe-3">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                        <tr>
+                            <td class="ps-3 fw-semibold">{{ log.ip_address }}</td>
+                            <td class="text-muted">{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+                            <td class="text-end pe-3">
+                                {% if log.is_allowed %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Autorisé</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Bloqué</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                Aucun log enregistré pour le moment.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

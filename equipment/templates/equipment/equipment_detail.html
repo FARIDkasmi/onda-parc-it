@@ -1,0 +1,29 @@
+{% extends 'equipment/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="m-0">ONDA — Fiche Équipement #{{ equipment.pk }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h4>Identifiant : {{ equipment.pk }}</h4>
+                    {% if equipment.nom %}
+                        <p><strong>Nom :</strong> {{ equipment.nom }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-5 text-center border-start">
+                    <h6>Étiquette QR Code</h6>
+                    <div class="p-2 bg-white border rounded d-inline-block shadow-sm my-2">
+                        <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" class="img-fluid" style="max-width: 180px;">
+                    </div>
+                    <p class="text-muted small m-0">URL codée :</p>
+                    <small class="text-break text-primary font-monospace">{{ scan_url }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

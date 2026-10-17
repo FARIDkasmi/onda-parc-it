@@ -1,0 +1,169 @@
+{% extends 'equipment/base.html' %}
+
+{% block title %}Détails Équipement - {{ equipment.code_inventaire }} | ONDA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+        <!-- ÉCRAN DE VERROUILLAGE PIN -->
+        <div id="lockScreen" class="card border-0 shadow-lg rounded-4 overflow-hidden d-none">
+            <div class="card-header text-white text-center py-4 bg-danger" style="background: linear-gradient(135deg, #DC3545 0%, #9B1C1C 100%);">
+                <i class="bi bi-shield-lock-fill fs-1"></i>
+                <h4 class="fw-bold mb-1 mt-2">Accès Restreint ONDA</h4>
+                <p class="mb-0 small opacity-75">Aéroport Nador El-Aroui — Sécurité Informatique</p>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div class="alert alert-warning border-0 small mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Ce scan QR nécessite un code d'autorisation agent ONDA.
+                </div>
+
+                <p class="text-muted mb-3 fw-medium">Entrez le code PIN de sécurité (par défaut: <strong class="text-dark">1234</strong>) :</p>
+                
+                <div class="input-group mb-3 mx-auto" style="max-width: 280px;">
+                    <input type="password" id="pinInput" class="form-control text-center fs-3 font-monospace" placeholder="****" maxlength="4" autocomplete="off">
+                    <button class="btn btn-danger px-4" type="button" onclick="unlockWithPIN()">
+                        <i class="bi bi-unlock-fill fs-5"></i>
+                    </button>
+                </div>
+                
+                <div id="pinError" class="alert alert-danger py-2 small d-none mb-3">
+                    <i class="bi bi-x-circle me-1"></i> Code PIN incorrect !
+                </div>
+
+                <a href="{% url 'equipment_list' %}" class="btn btn-outline-secondary rounded-pill px-4 mt-2">
+                    <i class="bi bi-arrow-left me-1"></i> Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+
+        <!-- CONTENU DE LA FICHE TECHNIQUE -->
+        <div id="scanContent" class="card border-0 shadow-lg rounded-4 overflow-hidden d-none">
+            
+            <div class="card-header text-white text-center py-4 position-relative" style="background: linear-gradient(135deg, #031A38 0%, #0F2757 100%); border-bottom: 3px solid #E89230;">
+                <div class="mb-2">
+                    <i class="bi bi-qr-code-scan fs-1 text-warning"></i>
+                </div>
+                <h4 class="fw-bold mb-1">Fiche Technique Équipement</h4>
+                <p class="mb-0 opacity-75 small">Aéroport Nador El-Aroui — Service Informatique</p>
+            </div>
+
+            <div class="card-body p-4 text-center">
+                
+                <!-- Badge d'accès autorisé -->
+                <div class="mb-3">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                        <i class="bi bi-check-circle-fill me-1"></i> Session PIN Vérifiée
+                    </span>
+                </div>
+
+                <!-- QR Code -->
+                <div class="p-3 bg-light rounded-3 d-inline-block shadow-sm mb-4 border">
+                    {% if equipment.qr_code %}
+                        <img src="{{ equipment.qr_code.url }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                    {% else %}
+                        <div class="p-4 text-muted">
+                            <i class="bi bi-qr-code fs-1 d-block mb-2"></i>
+                            <span>QR Code non disponible</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Caractéristiques -->
+                <div class="text-start">
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <tbody>
+                                <tr class="border-bottom">
+                                    <th class="text-muted py-3" style="width: 40%;">Code Inventaire :</th>
+                                    <td class="fw-bold text-primary fs-5 font-monospace py-3">{{ equipment.code_inventaire }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="text-muted py-3">Désignation :</th>
+                                    <td class="fw-semibold py-3">{{ equipment.designation }}</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="text-muted py-3">Catégorie :</th>
+                                    <td class="py-3"><span class="badge bg-light text-dark border fs-6">{{ equipment.get_categorie_display }}</span></td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <th class="text-muted py-3">Emplacement :</th>
+                                    <td class="py-3"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ equipment.emplacement }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted py-3">Statut Actuel :</th>
+                                    <td class="py-3">
+                                        {% if equipment.statut == 'IN_SERVICE' %}
+                                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>En service</span>
+                                        {% elif equipment.statut == 'MAINTENANCE' %}
+                                            <span class="badge bg-warning text-dark fs-6"><i class="bi bi-tools me-1"></i>En maintenance</span>
+                                        {% else %}
+                                            <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Hors service</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Boutons d'Action -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <a href="{% url 'equipment_list' %}" class="btn btn-outline-secondary px-4 rounded-pill">
+                        <i class="bi bi-arrow-left me-1"></i> Inventaire
+                    </a>
+                    <button onclick="lockAgain()" class="btn btn-outline-danger px-4 rounded-pill">
+                        <i class="bi bi-lock-fill me-1"></i> Re-verrouiller
+                    </button>
+                    <button onclick="window.print()" class="btn btn-dark px-4 rounded-pill" style="background-color: #031A38;">
+                        <i class="bi bi-printer me-1"></i> Imprimer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        checkScanAuthorization();
+    });
+
+    function checkScanAuthorization() {
+        let access = localStorage.getItem("onda_scan_access");
+        let lockScreen = document.getElementById("lockScreen");
+        let scanContent = document.getElementById("scanContent");
+
+        // SI L'ACCÈS N'EST PAS AUTORISÉ -> AFFICHER L'ÉCRAN DE VERROUILLAGE PIN
+        if (access !== "authorized") {
+            lockScreen.classList.remove("d-none");
+            scanContent.classList.add("d-none");
+        } else {
+            lockScreen.classList.add("d-none");
+            scanContent.classList.remove("d-none");
+        }
+    }
+
+    function unlockWithPIN() {
+        let pin = document.getElementById("pinInput").value;
+        let pinError = document.getElementById("pinError");
+
+        // Code PIN : 1234
+        if (pin === "1234") {
+            localStorage.setItem("onda_scan_access", "authorized");
+            pinError.classList.add("d-none");
+            checkScanAuthorization();
+        } else {
+            pinError.classList.remove("d-none");
+        }
+    }
+
+    function lockAgain() {
+        localStorage.removeItem("onda_scan_access");
+        checkScanAuthorization();
+    }
+</script>
+{% endblock %}

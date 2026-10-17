@@ -1,0 +1,213 @@
+{% extends 'equipment/base.html' %}
+
+{% block title %}ONDA - Inventaire du Parc Informatique{% endblock %}
+
+{% block content %}
+<!-- En-tête de la page -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-display text-primary me-2"></i>Gestion du Parc Informatique
+        </h4>
+        <p class="text-muted small mb-0">Inventaire en temps réel et suivi QR Code - Aéroport Nador El Aroui</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'export_equipment_csv' %}" class="btn btn-sm btn-outline-secondary bg-white text-dark shadow-sm px-3">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exporter CSV / Excel
+        </a>
+        <a href="/admin/equipment/equipment/add/" class="btn btn-sm btn-outline-secondary bg-white text-dark shadow-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> Nouveau Matériel
+        </a>
+    </div>
+</div>
+
+<!-- Cartes Statistiques -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 border-start border-primary border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">TOTAL ÉQUIPEMENTS</small>
+                    <h2 class="fw-bold my-1 text-primary">{{ total_count|default:equipments.count }}</h2>
+                </div>
+                <div class="bg-primary-subtle text-primary p-2 rounded-circle fs-4">
+                    <i class="bi bi-boxes"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 border-start border-success border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">EN SERVICE</small>
+                    <h2 class="fw-bold my-1 text-success">{{ in_service_count|default:"3" }}</h2>
+                </div>
+                <div class="bg-success-subtle text-success p-2 rounded-circle fs-4">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 border-start border-warning border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">EN MAINTENANCE</small>
+                    <h2 class="fw-bold my-1 text-warning">{{ maintenance_count|default:"1" }}</h2>
+                </div>
+                <div class="bg-warning-subtle text-warning p-2 rounded-circle fs-4">
+                    <i class="bi bi-tools"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm p-3 border-start border-danger border-4 rounded-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">HORS SERVICE</small>
+                    <h2 class="fw-bold my-1 text-danger">{{ out_service_count|default:"1" }}</h2>
+                </div>
+                <div class="bg-danger-subtle text-danger p-2 rounded-circle fs-4">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques de Synthèse -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Répartition par Statut</h6>
+            <div style="height: 220px;" class="d-flex justify-content-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-3 bg-white h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Distribution par Catégorie</h6>
+            <div style="height: 220px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau d'Inventaire -->
+<div class="card border-0 shadow-sm bg-white">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h6 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-list-task me-2 text-primary"></i>Liste des Équipements Enregistrés
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">QR Code</th>
+                    <th>Code Inventaire</th>
+                    <th>Désignation / Modèle</th>
+                    <th>Catégorie</th>
+                    <th>Emplacement</th>
+                    <th>Statut</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in equipments %}
+                <tr>
+                    <td class="ps-3">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=32x32&data={{ item.pk }}" alt="QR" width="32" height="32" class="border rounded p-1">
+                    </td>
+                    <td>
+                        <a href="{% url 'detail_equipment' item.pk %}" class="fw-bold text-primary text-decoration-none">
+                            {{ item.code_inventaire|default:item.pk }}
+                        </a>
+                    </td>
+                    <td class="fw-bold text-dark">
+                        {{ item.designation }}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border fw-normal px-2 py-1">
+                            {{ item.categorie|default:"Poste de travail / PC" }}
+                        </span>
+                    </td>
+                    <td class="text-muted">
+                        <i class="bi bi-geo-alt me-1"></i>{{ item.emplacement|default:"Aéroport Nador" }}
+                    </td>
+                    <td>
+                        {% if item.statut == 'IN_SERVICE' or item.statut == 'En service' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-normal">En service</span>
+                        {% elif item.statut == 'MAINTENANCE' or item.statut == 'En maintenance' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 fw-normal">En maintenance</span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-normal">Hors service</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'detail_equipment' item.pk %}" class="btn btn-sm btn-outline-primary px-2 py-1 me-1">
+                            <i class="bi bi-eye"></i> Details
+                        </a>
+                        <a href="/admin/equipment/equipment/{{ item.pk }}/change/" class="btn btn-sm btn-outline-secondary px-2 py-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Aucun équipement disponible dans la base de données.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Script pour le rendu des graphiques -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Graphique Donut (Statut)
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['En service', 'En maintenance', 'Hors service'],
+                datasets: [{
+                    data: [3, 1, 1],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // Graphique en Barres (Catégories)
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: {
+                labels: ['PC / Workstation', 'Imprimantes', 'Serveurs', 'Réseau', 'FIDS'],
+                datasets: [{
+                    data: [1, 2, 1, 1, 0],
+                    backgroundColor: '#1d4ed8',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    });
+</script>
+{% endblock %}
